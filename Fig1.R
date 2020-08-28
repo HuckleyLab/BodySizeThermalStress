@@ -6,8 +6,9 @@ library("accelerometry")
 #load climate data
 #Darrington, WA surface temp, 5 miute interval
 #ftp://ftp.ncdc.noaa.gov/pub/data/uscrn/products/subhourly01/2019/
+#data from 2013-2019 available, use 2019
 
-setwd("/Volumes/GoogleDrive/My Drive/Buckley/Work/NCCnews/data/USCRN/")
+setwd("./data/")
 
 # 4    LST_DATE                       YYYYMMDD
 # 5    LST_TIME                       HHmm
@@ -16,17 +17,7 @@ setwd("/Volumes/GoogleDrive/My Drive/Buckley/Work/NCCnews/data/USCRN/")
 # 14   ST_TYPE                        X
 # 15   ST_FLAG                        X
 
-#c2013= read.table("CRNS0101-05-2013-WA_Darrington_21_NNE.txt", na.strings = "-9999.0")
-#c2014= read.table("CRNS0101-05-2014-WA_Darrington_21_NNE.txt", na.strings = "-9999.0")
-#c2015= read.table("CRNS0101-05-2015-WA_Darrington_21_NNE.txt", na.strings = "-9999.0")
-#c2016= read.table("CRNS0101-05-2016-WA_Darrington_21_NNE.txt", na.strings = "-9999.0")
-#c2017= read.table("CRNS0101-05-2017-WA_Darrington_21_NNE.txt", na.strings = "-9999.0")
-#c2018= read.table("CRNS0101-05-2018-WA_Darrington_21_NNE.txt", na.strings = "-9999.0")
-c2019= read.table("CRNS0101-05-2019-WA_Darrington_21_NNE.txt", na.strings = "-9999.0")
-
-#clim= rbind(c2013, c2014, c2015, c2016, c2017, c2018, c2019)
-#Use 2019 data
-clim=c2019
+clim= read.table("CRNS0101-05-2019-WA_Darrington_21_NNE.txt", na.strings = "-9999.0")
 clim=clim[,c(4,5,9,13)]
 names(clim)<- c("date","time","Tair","Tsurf")
 
@@ -87,7 +78,7 @@ tcrits.s= tcrit(ms,hrs*60)
 tcrits.f= tcrit(mf,hrs*60)
 
 setwd("/Volumes/GoogleDrive/My Drive/Buckley/Work/NCCnews/figures/")
-pdf("Fig0.pdf", height = 6, width = 10)
+pdf("Fig1.pdf", height = 6, width = 10)
 par(mfrow=c(1,3))
 
 #labels
@@ -97,12 +88,12 @@ labs= c("5 minutes","1 hour","6 hours","1 day", "1 week")
 xs= log10( c(1,1*12,6*12,24*12, 168*12))
 
 plot(log10(hrs), tcrits.l, col="blue", type="l", 
-     ylab="temperature (°C)", xlab="log10 time",cex.lab=1.2, xaxt="n", ylim=c(21,39))
+     ylab="temperature (°C)", xlab="log10 time",cex.lab=1.4, xaxt="n", ylim=c(21,39))
 points(log10(hrs), tcrits.s, col="orange", type="l")
 points(log10(hrs), tcrits.f, col="green", type="l")
 #plot temps
 points(log10(hrs), rt, type="l", lty="dashed")
-text(0.4,38.7,"a")
+text(0.4,38.7,"a", cex=1.4)
 #update axis
 axis(1, at=xs, labels=labs)
 
@@ -128,10 +119,10 @@ Bt= 2.85  #CHECK SIGN
 log10MR= function(m,t) {log10(a)+c*(Bo-Bt*log10(t))+(b+c*(BM-BtM*log10(t)))*log10(m)}
 
 plot(log10(hrs), log10MR(ml,hrs*60), type="l", ylab="log10 metabolic rate (W)", xlab="log10 time", 
-     col="blue",cex.lab=1.2, xaxt="n", ylim= range(0.1,1) ) 
+     col="blue",cex.lab=1.4, xaxt="n", ylim= range(0.1,1) ) 
 points(log10(hrs), log10MR(ms,hrs*60), col="orange", type="l")
 points(log10(hrs), log10MR(mf,hrs*60), col="green", type="l")
-text(0,1,"b")
+text(0,1,"b", cex=1.4)
 #update axis
 axis(1, at=xs, labels=labs)
 
@@ -153,21 +144,21 @@ tsm.s= tcrits.s -rt
 tsm.f= tcrits.f -rt
 
 plot(log10(hrs), tsm.l, type="l", ylab="thermal safety margin (TSM, °C)", xlab="log10 time", 
-     col="blue",cex.lab=1.2, xaxt="n")
+     col="blue",cex.lab=1.4, xaxt="n")
 points(log10(hrs), tsm.s, col="orange", type="l")
 points(log10(hrs), tsm.f, col="green", type="l")
-text(0,8,"c")
+text(0,7,"c", cex=1.4)
 #update axis
 axis(1, at=xs, labels=labs)
 
 dev.off()
 
+#------
 #metrics
 #min TSM
 mean(c(which.min(tsm.l)*5/60, which.min(tsm.s)*5/60, which.min(tsm.f)*5/60))
 #TSM<0
 mean(c(which.min(tsm.l<0)*5/60, which.min(tsm.l<0)*5/60, which.min(tsm.l<0)*5/60))
-
 
 #difference in Tcrit at 5 minutes
 tcrits.f[1]-tcrits.l[1]
