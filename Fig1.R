@@ -1,16 +1,34 @@
 #Analysis for a NCC news and views
 
 library(zoo)
-
-setwd("/Volumes/GoogleDrive/My Drive/Buckley/Work/NCCnews/data/")
+library("accelerometry")
 
 #load climate data
-clim= read.csv("BoulderCr.csv")
-temp=clim$TempC
-#potential sources to update climate data:
-#https://climate.weather.gc.ca/historical_data/search_historic_data_e.html
-#https://data.pacificclimate.org/portal/pcds/map/
+#Darrington, WA surface temp, 5 miute interval
 #ftp://ftp.ncdc.noaa.gov/pub/data/uscrn/products/subhourly01/2019/
+
+setwd("/Volumes/GoogleDrive/My Drive/Buckley/Work/NCCnews/data/USCRN/")
+
+# 4    LST_DATE                       YYYYMMDD
+# 5    LST_TIME                       HHmm
+# 9    AIR_TEMPERATURE                Celsius
+# 13   SURFACE_TEMPERATURE            Celsius
+# 14   ST_TYPE                        X
+# 15   ST_FLAG                        X
+
+#c2013= read.table("CRNS0101-05-2013-WA_Darrington_21_NNE.txt", na.strings = "-9999.0")
+#c2014= read.table("CRNS0101-05-2014-WA_Darrington_21_NNE.txt", na.strings = "-9999.0")
+#c2015= read.table("CRNS0101-05-2015-WA_Darrington_21_NNE.txt", na.strings = "-9999.0")
+#c2016= read.table("CRNS0101-05-2016-WA_Darrington_21_NNE.txt", na.strings = "-9999.0")
+#c2017= read.table("CRNS0101-05-2017-WA_Darrington_21_NNE.txt", na.strings = "-9999.0")
+#c2018= read.table("CRNS0101-05-2018-WA_Darrington_21_NNE.txt", na.strings = "-9999.0")
+c2019= read.table("CRNS0101-05-2019-WA_Darrington_21_NNE.txt", na.strings = "-9999.0")
+
+#clim= rbind(c2013, c2014, c2015, c2016, c2017, c2018, c2019)
+#Use 2019 data
+clim=c2019
+clim=clim[,c(4,5,9,13)]
+names(clim)<- c("date","time","Tair","Tsurf")
 
 #load beetle data
 #https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/1365-2656.12789
@@ -24,14 +42,17 @@ temp=clim$TempC
 #/1000 to convert mg to g
 ml= (31.3 +0.0012*50*31.3)/0.4/1000
 ms= (31.3 -0.0012*50*31.3)/0.4/1000
-#also assume 75% reduction
-mf=ml*0.25
 
+#estimate 0.5% quantile of mass
+set.seed(1)
+size 	<- rnorm(10000000,31.3,9.6)/0.4/1000
+mf <- quantile(size,0.005)
+#------------
 #FUNCTIONS
 #estimate Tcrit
 tcrit= function(m,t){
-  ctmax= 41.93 -1.63*log10(m)
-  z= 2.86-0.45*log10(m)
+  ctmax= 41.92 -1.65*log10(m)
+  z= 2.85-0.45*log10(m)
   tc= ctmax-z*log10(t)
   return(tc)
 }
@@ -43,16 +64,22 @@ tcrit= function(m,t){
 
 #Average temperature to different time periods then estimate maximum 
 #n is with of period for rolling average
+temp=clim$Tsurf
+
 rollmax= function(n) {
-  max(rollmean(temp, n))
+  max(movingaves(temp, n), na.rm=TRUE)
 }
+
+ns=1:2016
+#ns= c(1:12,(2:12)*12, seq(13,168,12)*12,168*12)
+
+rt= sapply(ns, FUN=rollmax)
 
 #----
 #FIGURE
 
 #Fig 1A. Tcrit and Ta over time
-hrs=1:168
-rt= sapply( hrs, FUN=rollmax)
+hrs=ns
 
 #Estimate Tcrits for 3 sizes
 tcrits.l= tcrit(ml,hrs*60)
@@ -64,21 +91,23 @@ pdf("Fig0.pdf", height = 6, width = 10)
 par(mfrow=c(1,3))
 
 #labels
-labs= c("1 hour","6 hours","1 day", "1 week")
-xs= log10( c(1,6,24, 168))
+#labs= c("1 hour","6 hours","1 day", "1 week")
+#xs= log10( c(1,6,24, 168))
+labs= c("5 minutes","1 hour","6 hours","1 day", "1 week")
+xs= log10( c(1,1*12,6*12,24*12, 168*12))
 
 plot(log10(hrs), tcrits.l, col="blue", type="l", 
-     ylab="temperature (°C)", xlab="log10 time",cex.lab=1.2, xaxt="n")
+     ylab="temperature (°C)", xlab="log10 time",cex.lab=1.2, xaxt="n", ylim=c(21,39))
 points(log10(hrs), tcrits.s, col="orange", type="l")
 points(log10(hrs), tcrits.f, col="green", type="l")
 #plot temps
 points(log10(hrs), rt, type="l", lty="dashed")
-text(0.4,37.5,"a")
+text(0.4,38.7,"a")
 #update axis
 axis(1, at=xs, labels=labs)
 
 # Add a legend
-legend("topright", legend=c("1915: 82.9mg", "2015: 73.5mg","20.7mg", "Ta"),
+legend("bottomleft", legend=c("1915: 82.9mg", "2015: 73.5mg","smallest: 16.4mg", "Ta"),
        col=c("blue", "orange", "green","black"), lty=c("solid","solid","solid","dashed"), cex=1.2)
 
 #-----------------
@@ -99,7 +128,7 @@ Bt= 2.85  #CHECK SIGN
 log10MR= function(m,t) {log10(a)+c*(Bo-Bt*log10(t))+(b+c*(BM-BtM*log10(t)))*log10(m)}
 
 plot(log10(hrs), log10MR(ml,hrs*60), type="l", ylab="log10 metabolic rate (W)", xlab="log10 time", 
-     col="blue",cex.lab=1.2, xaxt="n", ylim= range(0.25,1) ) 
+     col="blue",cex.lab=1.2, xaxt="n", ylim= range(0.1,1) ) 
 points(log10(hrs), log10MR(ms,hrs*60), col="orange", type="l")
 points(log10(hrs), log10MR(mf,hrs*60), col="green", type="l")
 text(0,1,"b")
@@ -111,9 +140,9 @@ mc= c(ml, ms, mf)
 lm(log10MR(mf,hrs*60)~ log10(hrs))$coefficients[2]
 
 #text
-text(1,0.9,"slope= -0.133",col="blue", srt=-35, cex=1.2)
-text(1,0.78,"slope= -0.134",col="orange", srt=-35, cex=1.2)
-text(1,0.47,"slope= -0.144",col="green", srt=-35, cex=1.2)
+text(1,0.9,"slope= -0.133",col="blue", srt=-45, cex=1.2)
+text(1,0.78,"slope= -0.134",col="orange", srt=-45, cex=1.2)
+text(1,0.4,"slope= -0.145",col="green", srt=-45, cex=1.2)
 
 #-----------------
 #Fig 1C. Plot TSM as a function of exposure time
@@ -132,3 +161,15 @@ text(0,8,"c")
 axis(1, at=xs, labels=labs)
 
 dev.off()
+
+#metrics
+#min TSM
+mean(c(which.min(tsm.l)*5/60, which.min(tsm.s)*5/60, which.min(tsm.f)*5/60))
+#TSM<0
+mean(c(which.min(tsm.l<0)*5/60, which.min(tsm.l<0)*5/60, which.min(tsm.l<0)*5/60))
+
+
+#difference in Tcrit at 5 minutes
+tcrits.f[1]-tcrits.l[1]
+
+
