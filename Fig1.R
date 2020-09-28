@@ -2,6 +2,9 @@
 
 library(zoo)
 library("accelerometry")
+library(viridisLite)
+
+cols= viridis(10)[c(2,5,9)]
 
 #load climate data
 #Darrington, WA surface temp, 5 miute interval
@@ -78,8 +81,8 @@ tcrits.s= tcrit(ms,hrs*60)
 tcrits.f= tcrit(mf,hrs*60)
 
 setwd("/Volumes/GoogleDrive/My Drive/Buckley/Work/NCCnews/figures/")
-pdf("Fig1.pdf", height = 6, width = 10)
-par(mfrow=c(1,3))
+pdf("Fig1.pdf", height = 5, width = 10)
+par(mfrow=c(1,3), mgp=c(2.5,1,0))
 
 #labels
 #labs= c("1 hour","6 hours","1 day", "1 week")
@@ -87,20 +90,21 @@ par(mfrow=c(1,3))
 labs= c("5 minutes","1 hour","6 hours","1 day", "1 week")
 xs= log10( c(1,1*12,6*12,24*12, 168*12))
 
-plot(log10(hrs), tcrits.l, col="blue", type="l", 
-     ylab="temperature (°C)", xlab="log10 time",cex.lab=1.4, xaxt="n", ylim=c(21,39))
-points(log10(hrs), tcrits.s, col="orange", type="l")
-points(log10(hrs), tcrits.f, col="green", type="l")
+plot(log10(hrs), tcrits.l, col=cols[3], type="l", 
+     ylab="temperature (°C)", xlab="",cex.lab=1.8, xaxt="n", ylim=c(21,39), lwd=2, 
+     cex.axis=1.4)
+points(log10(hrs), tcrits.s, col=cols[2], type="l", lwd=2)
+points(log10(hrs), tcrits.f, col=cols[1], type="l", lwd=2)
 #plot temps
-points(log10(hrs), rt, type="l", lty="dashed")
-text(0.4,38.7,"a", cex=1.4)
+points(log10(hrs), rt, type="l", lty="dashed", lwd=2)
+text(0.4,39.2,"a", cex=1.8)
 #update axis
-axis(1, at=xs, labels=labs)
-
+axis(1, at=xs, labels=labs, cex.axis=1.4)
+  
 # Add a legend
-legend("bottomleft", legend=c("1915: 82.9mg", "2015: 73.5mg","smallest: 16.4mg", "Ta"),
-       col=c("blue", "orange", "green","black"), lty=c("solid","solid","solid","dashed"), cex=1.2)
-
+legend("bottomleft", legend=c("1915: 82.9mg", "2015: 73.5mg","smallest: 16.4mg"),
+       col=cols[3:1], lty=c("solid","solid","solid"), cex=1.6, bty="n")
+#"environmental temperature" ,"dashed"
 #-----------------
 #Fig 1B. Plot change in maximum metabolism at Tcrit as a function of exposure time
 a <- 2
@@ -119,21 +123,21 @@ Bt= 2.85  #CHECK SIGN
 log10MR= function(m,t) {log10(a)+c*(Bo-Bt*log10(t))+(b+c*(BM-BtM*log10(t)))*log10(m)}
 
 plot(log10(hrs), log10MR(ml,hrs*60), type="l", ylab="log10 metabolic rate (W)", xlab="log10 time", 
-     col="blue",cex.lab=1.4, xaxt="n", ylim= range(0.1,1) ) 
-points(log10(hrs), log10MR(ms,hrs*60), col="orange", type="l")
-points(log10(hrs), log10MR(mf,hrs*60), col="green", type="l")
-text(0,1,"b", cex=1.4)
+     col=cols[3],cex.lab=1.8, xaxt="n", ylim= range(0.1,1), lwd=2, cex.axis=1.4) 
+points(log10(hrs), log10MR(ms,hrs*60), col=cols[2], type="l", lwd=2)
+points(log10(hrs), log10MR(mf,hrs*60), col=cols[1], type="l", lwd=2)
+text(0,1.02,"b", cex=1.8)
 #update axis
-axis(1, at=xs, labels=labs)
+axis(1, at=xs, labels=labs, cex.axis=1.4)
 
 #slopes
 mc= c(ml, ms, mf)
 lm(log10MR(mf,hrs*60)~ log10(hrs))$coefficients[2]
 
 #text
-text(1,0.9,"slope= -0.133",col="blue", srt=-45, cex=1.2)
-text(1,0.78,"slope= -0.134",col="orange", srt=-45, cex=1.2)
-text(1,0.4,"slope= -0.145",col="green", srt=-45, cex=1.2)
+text(1,0.9,"slope= -0.133",col=cols[3], srt=-35, cex=1.6)
+text(1,0.78,"slope= -0.134",col=cols[2], srt=-35, cex=1.6)
+text(1,0.4,"slope= -0.145",col=cols[1], srt=-35, cex=1.6)
 
 #-----------------
 #Fig 1C. Plot TSM as a function of exposure time
@@ -143,13 +147,13 @@ tsm.l= tcrits.l -rt
 tsm.s= tcrits.s -rt 
 tsm.f= tcrits.f -rt
 
-plot(log10(hrs), tsm.l, type="l", ylab="thermal safety margin (TSM, °C)", xlab="log10 time", 
-     col="blue",cex.lab=1.4, xaxt="n")
-points(log10(hrs), tsm.s, col="orange", type="l")
-points(log10(hrs), tsm.f, col="green", type="l")
-text(0,7,"c", cex=1.4)
+plot(log10(hrs), tsm.l, type="l", ylab="thermal safety margin (TSM, °C)", xlab="", 
+     col=cols[3],cex.lab=1.8, xaxt="n", lwd=2, cex.axis=1.4)
+points(log10(hrs), tsm.s, col=cols[2], type="l", lwd=2)
+points(log10(hrs), tsm.f, col=cols[1], type="l", lwd=2)
+text(0,7.4,"c", cex=1.8)
 #update axis
-axis(1, at=xs, labels=labs)
+axis(1, at=xs, labels=labs, cex.axis=1.4)
 
 dev.off()
 
