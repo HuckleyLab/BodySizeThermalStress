@@ -3,6 +3,7 @@
 library(zoo)
 library("accelerometry")
 library(viridisLite)
+library(rphylopic) #for beetle icon
 
 cols= viridis(10)[c(2,5,9)]
 
@@ -41,6 +42,7 @@ ms= (31.3 -0.0012*50*31.3)/0.4/1000
 set.seed(1)
 size 	<- rnorm(10000000,31.3,9.6)/0.4/1000
 mf <- quantile(size,0.005)
+
 #------------
 #FUNCTIONS
 #estimate Tcrit
@@ -105,6 +107,11 @@ axis(1, at=xs, labels=labs, cex.axis=1.4)
 legend("bottomleft", legend=c("1915: 82.9mg", "2015: 73.5mg","smallest: 16.4mg"),
        col=cols[3:1], lty=c("solid","solid","solid"), cex=1.6, bty="n")
 #"environmental temperature" ,"dashed"
+
+#add beetle
+#img <- image_data("dd92c3e8-ad3d-485d-b551-12961476e8d8", size = "1")[[1]]
+#add_phylopic_base(img, 1, 27, 4)
+
 #-----------------
 #Fig 1B. Plot change in maximum metabolism at Tcrit as a function of exposure time
 a <- 2
@@ -118,7 +125,7 @@ BtM <- - 0.45
 bprim <- b + c*(BM - BtM*log10(t))
 
 Bo=41.92
-Bt= 2.85  #CHECK SIGN
+Bt= 2.85
 
 log10MR= function(m,t) {log10(a)+c*(Bo-Bt*log10(t))+(b+c*(BM-BtM*log10(t)))*log10(m)}
 
